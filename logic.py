@@ -1,33 +1,11 @@
 # https://stackoverflow.com/questions/45471152/how-to-create-a-sudoku-puzzle-in-python
 
 
-normal_sudoku = [
-    [8, 0, 0, 4, 0, 6, 0, 0, 7],
-    [0, 0, 0, 0, 0, 0, 4, 0, 0],
-    [0, 1, 0, 0, 0, 0, 6, 5, 0],
-    [5, 0, 9, 0, 3, 0, 7, 8, 0],
-    [0, 0, 0, 0, 7, 0, 0, 0, 0],
-    [0, 4, 8, 0, 2, 0, 1, 0, 3],
-    [0, 5, 2, 0, 0, 0, 0, 9, 0],
-    [0, 0, 1, 0, 0, 0, 0, 0, 0],
-    [3, 0, 0, 9, 0, 2, 0, 0, 5],
-]
-
-# evil
-evil_sudoku = [
-    [0, 7, 0, 5, 3, 0, 1, 0, 6],
-    [0, 0, 2, 0, 0, 0, 0, 0, 7],
-    [0, 0, 0, 0, 8, 0, 0, 0, 0],
-    [0, 5, 0, 0, 0, 8, 0, 0, 0],
-    [0, 0, 4, 6, 5, 0, 0, 3, 0],
-    [0, 0, 0, 0, 0, 2, 6, 0, 0],
-    [0, 0, 0, 0, 0, 6, 0, 0, 0],
-    [9, 0, 0, 0, 0, 0, 0, 4, 0],
-    [0, 2, 0, 1, 7, 0, 3, 0, 0],
-]
+from sudokus import evil_sudoku, normal_sudoku, empty_sudoku
 
 side_of_unit = 3
 counter = 0
+solutions = []
 MAX_TOTAL_CYCLES = 200
 
 
@@ -53,10 +31,38 @@ def check_valid_move(sudoku, x, y, number):
 
 
 def check_solution(sudoku):
-    pass
+    flat = [item for items in sudoku for item in items]
+    try:
+        flat.index(0)
+        return False
+    except ValueError:
+        pass
+
+    if not all(sum(row) == sum(set(row)) for row in sudoku):
+        return False
+    transposed_sudoku = list(zip(*sudoku))
+
+    if not all(sum(row) == sum(set(row)) for row in transposed_sudoku):
+        return False
+
+    numbers = [x + 1 for x in range(side_of_unit**2)]
+    for vertical_step in range(side_of_unit):
+        for horizontal_step in range(side_of_unit):
+            grid = []
+            for x in range(side_of_unit):
+                for y in range(side_of_unit):
+                    grid.append(
+                        sudoku[(side_of_unit * vertical_step) + y][
+                            (side_of_unit * horizontal_step) + x
+                        ]
+                    )
+            grid.sort()
+            if grid != numbers:
+                return False
+    return True
 
 
-def solve_sudoku(sudoku):
+def solve_sudoku(sudoku, solutions):
     global counter
     while counter < MAX_TOTAL_CYCLES:
         for x in range(side_of_unit**2):
@@ -65,22 +71,31 @@ def solve_sudoku(sudoku):
                     for number in range(1, (side_of_unit**2) + 1):
                         if check_valid_move(sudoku, x=x, y=y, number=number):
                             sudoku[y][x] = number
-                            solve_sudoku(sudoku)
-                            sudoku[y][x] = 0
+                            if check_solution(sudoku):
+                                solution = sudoku.copy()
+                                counter += 1
+                                solutions.append(solution)
+                                print(sudoku)
+                                return
+                            else:
+                                solve_sudoku(sudoku, solutions)
+                                sudoku[y][x] = 0
+
                     return
-        counter += 1
-        return sudoku
 
 
 if __name__ == "__main__":
 
-    sudoku = normal_sudoku
-    solution = solve_sudoku(sudoku)
+    test = normal_sudoku
+    solve_sudoku(test, solutions)
     if counter == 1:
         print(f"the sudoku has one solution")
-        for row in solution:
-            print(row)
+
     elif counter == MAX_TOTAL_CYCLES:
         print(f"the sudoku has at least {MAX_TOTAL_CYCLES} solutions")
     elif counter > 1:
         print(f"the sudoku has {counter} solutions")
+    elif counter == 0:
+        print(f"the sudoku has no solution")
+    else:
+        print("check other options")

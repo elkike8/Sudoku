@@ -5,6 +5,7 @@ from sudokus import evil_sudoku, normal_sudoku, empty_sudoku
 
 side_of_unit = 3
 counter = 0
+found_solutions = 0
 solutions = []
 MAX_TOTAL_CYCLES = 200
 
@@ -63,18 +64,21 @@ def check_solution(sudoku):
 
 
 def solve_sudoku(sudoku):
-    global counter
-    while counter < MAX_TOTAL_CYCLES:
-        for x in range(side_of_unit**2):
-            for y in range(side_of_unit**2):
+
+    solved = check_solution(sudoku)
+
+    if solved:
+        found_solutions += 1
+        solutions.append(sudoku)
+        counter += 1
+        return
+    else:
+        for y in range(side_of_unit**2):
+            for x in range(side_of_unit**2):
                 if sudoku[y][x] == 0:
                     for number in range(1, (side_of_unit**2) + 1):
-                        if check_valid_move(sudoku, x=x, y=y, number=number):
+                        if check_valid_move(sudoku, y, x, number):
                             sudoku[y][x] = number
-                            if check_solution(sudoku):
-                                counter += 1
-                                solutions.append(sudoku)
-                                return
                             solve_sudoku(sudoku)
                             sudoku[y][x] = 0
                     return
@@ -82,7 +86,7 @@ def solve_sudoku(sudoku):
 
 if __name__ == "__main__":
 
-    test = empty_sudoku
+    test = normal_sudoku
     solve_sudoku(test)
     if counter == 1:
         print(f"the sudoku has one solution")

@@ -74,15 +74,12 @@ def solve_sudoku(sudoku, solutions):
                             if check_solution(sudoku):
                                 solution = sudoku.copy()
                                 counter += 1
-                                solutions.append(solution)
-                                print(sudoku)
-                                return
-                            else:
-                                solve_sudoku(sudoku, solutions)
-                                sudoku[y][x] = 0
-
-                    return
-
+        solutions.append(sudoku)
+        return True
+    
+    else:
+        for y in range(side_of_unit)
+    
 
 if __name__ == "__main__":
 

@@ -1,7 +1,7 @@
 # https://stackoverflow.com/questions/45471152/how-to-create-a-sudoku-puzzle-in-python
 
 
-from sudokus import evil_sudoku, normal_sudoku, empty_sudoku
+from sudokus import *
 
 side_of_unit = 3
 counter = 0
@@ -64,29 +64,39 @@ def check_solution(sudoku):
 
 
 def solve_sudoku(sudoku):
-
+    global solutions
+    global found_solutions
+    global counter
     solved = check_solution(sudoku)
 
-    if solved:
-        found_solutions += 1
-        solutions.append(sudoku)
-        counter += 1
-        return
-    else:
-        for y in range(side_of_unit**2):
-            for x in range(side_of_unit**2):
-                if sudoku[y][x] == 0:
-                    for number in range(1, (side_of_unit**2) + 1):
-                        if check_valid_move(sudoku, y, x, number):
-                            sudoku[y][x] = number
-                            solve_sudoku(sudoku)
-                            sudoku[y][x] = 0
-                    return
+    while counter < MAX_TOTAL_CYCLES:
+        if solved:
+            counter += 1
+            if counter == 0:
+                print("the sudoku entered is solved")
+                return
+            else:
+                found_solutions += 1
+                if found_solutions == 1:
+                    for row in sudoku:
+                        print(row)
+                counter += 1
+                return
+        else:
+            for y in range(side_of_unit**2):
+                for x in range(side_of_unit**2):
+                    if sudoku[y][x] == 0:
+                        for number in range(1, (side_of_unit**2) + 1):
+                            if check_valid_move(sudoku, x, y, number):
+                                sudoku[y][x] = number
+                                solve_sudoku(sudoku)
+                                sudoku[y][x] = 0
+                        return
 
 
 if __name__ == "__main__":
 
-    test = normal_sudoku
+    test = two_answers_sudoku
     solve_sudoku(test)
     if counter == 1:
         print(f"the sudoku has one solution")

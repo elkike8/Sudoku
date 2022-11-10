@@ -62,7 +62,7 @@ def check_solution(sudoku):
     return True
 
 
-def solve_sudoku(sudoku, solutions):
+def solve_sudoku(sudoku):
     global counter
     while counter < MAX_TOTAL_CYCLES:
         for x in range(side_of_unit**2):
@@ -72,19 +72,18 @@ def solve_sudoku(sudoku, solutions):
                         if check_valid_move(sudoku, x=x, y=y, number=number):
                             sudoku[y][x] = number
                             if check_solution(sudoku):
-                                solution = sudoku.copy()
                                 counter += 1
-        solutions.append(sudoku)
-        return True
-    
-    else:
-        for y in range(side_of_unit)
-    
+                                solutions.append(sudoku)
+                                return
+                            solve_sudoku(sudoku)
+                            sudoku[y][x] = 0
+                    return
+
 
 if __name__ == "__main__":
 
-    test = normal_sudoku
-    solve_sudoku(test, solutions)
+    test = empty_sudoku
+    solve_sudoku(test)
     if counter == 1:
         print(f"the sudoku has one solution")
 

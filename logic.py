@@ -96,7 +96,7 @@ def solve_sudoku(sudoku):
 
 if __name__ == "__main__":
 
-    test = two_answers_sudoku
+    test = solved_sudoku
     solve_sudoku(test)
     if counter == 1:
         print(f"the sudoku has one solution")
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     elif counter == MAX_TOTAL_CYCLES:
         print(f"the sudoku has at least {MAX_TOTAL_CYCLES} solutions")
     elif counter > 1:
-        print(f"the sudoku has {counter} solutions")
+        print(f"the sudoku has {found_solutions} solutions")
     elif counter == 0:
         print(f"the sudoku has no solution")
     else:

@@ -26,7 +26,7 @@ class SudokuBoard(tk.Tk):
                         bg="black",
                         height=2,
                         width=4,
-                        relief=Flat,
+                        relief="flat",
                     )
 
                     button.bind("<ButtonPress-1>", self.create_entry_pad)
@@ -40,7 +40,7 @@ class SudokuBoard(tk.Tk):
                         bg="white",
                         height=2,
                         width=4,
-                        relief=Flat,
+                        relief="flat",
                     )
                     self.spaces[button] = (row, col)
                     button.grid(row=row, column=col)
@@ -79,40 +79,6 @@ class SudokuBoard(tk.Tk):
                 i += 1
                 button.bind("<ButtonPress>", get_number)
                 button.grid(row=row, column=col, sticky="nsew")
-
-    def create_board(self, size: int = 3):
-        board = tk.Frame(self)
-        board.pack()
-
-        for row in range(size**2):
-            self.rowconfigure(row, weight=1)
-            self.columnconfigure(row, weight=1)
-            for col in range(size**2):
-                if self.original_sudoku[row][col] == 0:
-                    button = tk.Button(
-                        master=board,
-                        text="",
-                        bg="white",
-                        height=2,
-                        width=4,
-                        relief="raised",
-                    )
-
-                    button.bind("<ButtonPress-1>", self.create_entry_pad)
-                    self.spaces[button] = (row, col)
-                    button.grid(row=row, column=col, sticky="nsew")
-
-                else:
-                    button = tk.Button(
-                        master=board,
-                        text=self.original_sudoku[row][col],
-                        bg="SystemButtonFace",
-                        height=2,
-                        width=4,
-                        relief="raised",
-                    )
-                    self.spaces[button] = (row, col)
-                    button.grid(row=row, column=col, sticky="nsew")
 
     def update_board(self, selected_space, number):
         selected_space.config(text=number)

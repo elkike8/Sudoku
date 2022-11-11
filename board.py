@@ -1,5 +1,16 @@
 import tkinter as tk
+from itertools import cycle
 from sudokus import *
+
+
+colors = ("#6f7cf7", "#6ff7e9")
+
+
+def is_even(number):
+    if number % 2 == 0:
+        return True
+    else:
+        return False
 
 
 class SudokuBoard(tk.Tk):
@@ -7,26 +18,53 @@ class SudokuBoard(tk.Tk):
         super().__init__()
         self.original_sudoku = evil_sudoku
         self.working_sudoku = self.original_sudoku.copy()
-        self.size_of_unit = 2
+        self.size_of_unit = 3
+        self.empty_sudoku = [0 for x in range(self.size_of_unit)]
         self.spaces = {}
-        self.create_board(size=self.size_of_unit)
+        self.create_premade_board(self.size_of_unit)
 
-    def create_board(self, size: int = 3):
+    def create_blank_board(self, size):
+        self.working_sudoku = [[0 for x in range(size**2)] for x in range(size**2)]
         board = tk.Frame(self)
         board.pack()
+        self.color = cycle(colors)
 
         for row in range(size**2):
-            self.rowconfigure(row, weight=1)
-            self.columnconfigure(row, weight=1)
+            if is_even(self.size_of_unit) and int(row % size) == 0:
+                bg_color = next(self.color)
+            elif not is_even(self.size_of_unit) and int(row % size) != 0:
+                bg_color = next(self.color)
+
             for col in range(size**2):
+                if int(col % size) == 0:
+                    bg_color = next(self.color)
+                button = tk.Button(
+                    master=board, text="", bg=bg_color, height=2, width=4
+                )
+                button.bind("<ButtonPress-1>", self.create_entry_pad)
+                self.spaces[button] = (row, col)
+                button.grid(row=row, column=col)
+
+    def create_premade_board(self, size: int = 3):
+        board = tk.Frame(self)
+        board.pack()
+        self.color = cycle(colors)
+
+        for row in range(size**2):
+            if is_even(self.size_of_unit) and int(row % size) == 0:
+                bg_color = next(self.color)
+            elif not is_even(self.size_of_unit) and int(row % size) != 0:
+                bg_color = next(self.color)
+            for col in range(size**2):
+                if int(col % size) == 0:
+                    bg_color = next(self.color)
                 if self.original_sudoku[row][col] == 0:
                     button = tk.Button(
                         master=board,
                         text="",
-                        bg="black",
+                        bg=bg_color,
                         height=2,
                         width=4,
-                        relief="flat",
                     )
 
                     button.bind("<ButtonPress-1>", self.create_entry_pad)
@@ -37,10 +75,9 @@ class SudokuBoard(tk.Tk):
                     button = tk.Button(
                         master=board,
                         text=self.original_sudoku[row][col],
-                        bg="white",
+                        bg=bg_color,
                         height=2,
                         width=4,
-                        relief="flat",
                     )
                     self.spaces[button] = (row, col)
                     button.grid(row=row, column=col)
@@ -48,11 +85,16 @@ class SudokuBoard(tk.Tk):
     def create_entry_pad(self, event):
         self.pad_buttons = {}
         selected_space = event.widget
+        x_pos, y_pos = self.spaces[selected_space]
+        print(x_pos, y_pos)
 
         def get_number(pad_event):
             number = pad_event.widget
-            print(self.pad_buttons[number])
-            self.update_board(selected_space, self.pad_buttons[number])
+            number = self.pad_buttons[number]
+            self.update_board(selected_space, number)
+            self.working_sudoku[x_pos][y_pos] = number
+            for row in self.working_sudoku:
+                print(row)
             window.destroy()
 
         size = self.size_of_unit
@@ -62,7 +104,6 @@ class SudokuBoard(tk.Tk):
         pad = tk.Frame(window)
         pad.pack()
         i = 1
-        print(self.spaces[selected_space])
 
         for row in range(size):
             self.rowconfigure(row, weight=1)

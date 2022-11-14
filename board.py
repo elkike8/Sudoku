@@ -13,7 +13,7 @@ user_button_color = "red"
 system_button_color = "black"
 
 
-def is_even(number):
+def is_even(number: int):
     if number % 2 == 0:
         return True
     else:
@@ -23,17 +23,21 @@ def is_even(number):
 class SudokuBoard(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.original_sudoku = two_answers_sudoku
+        self.original_sudoku = normal_sudoku
         self.working_sudoku = self.original_sudoku.copy()
-        self.size_of_unit = 3
+        self.size_of_unit = 2
         self.empty_sudoku = [0 for x in range(self.size_of_unit)]
         self.spaces = {}
         self.counter = 0
         self.found_solutions = 0
         self.solutions = []
+        self.unique_solution = [
+            [0 for x in range(self.size_of_unit**2)]
+            for x in range(self.size_of_unit**2)
+        ]
 
         self.create_hud()
-        self.create_premade_board(self.size_of_unit)
+        self.create_blank_board(self.size_of_unit)
 
     def create_hud(self):
         hud = tk.Frame(self)
@@ -45,6 +49,12 @@ class SudokuBoard(tk.Tk):
             command=self.is_it_solved,
         )
         button_check_solution.pack()
+        button_give_solution = tk.Button(
+            master=hud,
+            text="give solution",
+            command=self.solve_sudoku,
+        )
+        button_give_solution.pack()
         hud.pack(fill=tk.X)
 
     def create_blank_board(self, size):
@@ -71,7 +81,7 @@ class SudokuBoard(tk.Tk):
                     height=height,
                     width=width,
                 )
-                button.bind("<ButtonPress-1>", self.create_entry_pad)
+                button.bind("<ButtonPress>", self.create_entry_pad)
                 self.spaces[button] = (row, col)
                 button.grid(row=row, column=col)
 
@@ -218,36 +228,39 @@ class SudokuBoard(tk.Tk):
                     return False
         return True
 
-    def solve_sudoku(self, sudoku):
-        global solutions
-        global found_solutions
-        global counter
-        solved = self.check_for_solution(sudoku)
+    def solve_sudoku(self):
 
-        while counter < MAX_TOTAL_CYCLES:
+        solved = self.check_for_solution()
+
+        while self.counter < MAX_TOTAL_CYCLES:
             if solved:
-                counter += 1
-                if counter == 0:
+                self.counter += 1
+                if self.counter == 0:
                     print("the sudoku entered is solved")
                     return
                 else:
-                    found_solutions += 1
-                    if found_solutions == 1:
-                        for row in sudoku:
-                            print(row)
-                    counter += 1
+                    self.found_solutions += 1
+                    if self.found_solutions == 1:
+                        for k, v in self.spaces.items():
+                            x, y = v
+                            self.update_board(k, self.working_sudoku[x][y])
+                            self.unique_solution[x][y] = self.working_sudoku[x][y]
+                    self.counter += 1
                     return
             else:
                 for y in range(self.size_of_unit**2):
                     for x in range(self.size_of_unit**2):
-                        if sudoku[y][x] == 0:
+                        if self.working_sudoku[y][x] == 0:
                             for number in range(1, (self.size_of_unit**2) + 1):
-                                if self.check_valid_move(sudoku, x, y, number):
-                                    sudoku[y][x] = number
-                                    self.solve_sudoku(sudoku)
-                                    sudoku[y][x] = 0
+                                if self.check_valid_move(
+                                    self.working_sudoku, x, y, number
+                                ):
+                                    self.working_sudoku[y][x] = number
+                                    self.solve_sudoku()
+                                    self.working_sudoku[y][x] = 0
                             return
 
 
-a = SudokuBoard()
-a.mainloop()
+if __name__ == "__main__":
+    a = SudokuBoard()
+    a.mainloop()

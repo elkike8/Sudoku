@@ -3,6 +3,7 @@ from itertools import cycle
 from sudokus import *
 
 
+MAX_TOTAL_CYCLES = 200
 colors = ("#CBEBF4", "#CBD7F5")
 height = 2
 width = 4
@@ -27,6 +28,10 @@ class SudokuBoard(tk.Tk):
         self.size_of_unit = 3
         self.empty_sudoku = [0 for x in range(self.size_of_unit)]
         self.spaces = {}
+        self.counter = 0
+        self.found_solutions = 0
+        self.solutions = []
+
         self.create_hud()
         self.create_premade_board(self.size_of_unit)
 
@@ -213,36 +218,35 @@ class SudokuBoard(tk.Tk):
                     return False
         return True
 
-    def check_solution(self, sudoku):
-        flat = [item for items in sudoku for item in items]
-        try:
-            flat.index(0)
-            return False
-        except ValueError:
-            pass
+    def solve_sudoku(self, sudoku):
+        global solutions
+        global found_solutions
+        global counter
+        solved = self.check_for_solution(sudoku)
 
-        if not all(sum(row) == sum(set(row)) for row in sudoku):
-            return False
-        transposed_sudoku = list(zip(*sudoku))
-
-        if not all(sum(row) == sum(set(row)) for row in transposed_sudoku):
-            return False
-
-        numbers = [x + 1 for x in range(self.size_of_unit**2)]
-        for vertical_step in range(self.size_of_unit):
-            for horizontal_step in range(self.size_of_unit):
-                grid = []
-                for x in range(self.size_of_unit):
-                    for y in range(self.size_of_unit):
-                        grid.append(
-                            sudoku[(self.size_of_unit * vertical_step) + y][
-                                (self.size_of_unit * horizontal_step) + x
-                            ]
-                        )
-                grid.sort()
-                if grid != numbers:
-                    return False
-        return True
+        while counter < MAX_TOTAL_CYCLES:
+            if solved:
+                counter += 1
+                if counter == 0:
+                    print("the sudoku entered is solved")
+                    return
+                else:
+                    found_solutions += 1
+                    if found_solutions == 1:
+                        for row in sudoku:
+                            print(row)
+                    counter += 1
+                    return
+            else:
+                for y in range(self.size_of_unit**2):
+                    for x in range(self.size_of_unit**2):
+                        if sudoku[y][x] == 0:
+                            for number in range(1, (self.size_of_unit**2) + 1):
+                                if self.check_valid_move(sudoku, x, y, number):
+                                    sudoku[y][x] = number
+                                    self.solve_sudoku(sudoku)
+                                    sudoku[y][x] = 0
+                            return
 
 
 a = SudokuBoard()

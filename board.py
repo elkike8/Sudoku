@@ -3,7 +3,13 @@ from itertools import cycle
 from sudokus import *
 
 
-colors = ("#6f7cf7", "#6ff7e9")
+colors = ("#CBEBF4", "#CBD7F5")
+height = 2
+width = 4
+title_font = ("Arial", 18, "bold")
+button_font = ("Arial", 10, "bold")
+user_button_color = "red"
+system_button_color = "black"
 
 
 def is_even(number):
@@ -16,12 +22,25 @@ def is_even(number):
 class SudokuBoard(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.original_sudoku = evil_sudoku
+        self.original_sudoku = two_answers_sudoku
         self.working_sudoku = self.original_sudoku.copy()
         self.size_of_unit = 3
         self.empty_sudoku = [0 for x in range(self.size_of_unit)]
         self.spaces = {}
+        self.create_hud()
         self.create_premade_board(self.size_of_unit)
+
+    def create_hud(self):
+        hud = tk.Frame(self)
+        message = tk.Label(hud, font=title_font, text=f"Let's play some Sudoku")
+        message.pack(fill=tk.X)
+        button_check_solution = tk.Button(
+            master=hud,
+            text="check solution",
+            command=self.is_it_solved,
+        )
+        button_check_solution.pack()
+        hud.pack(fill=tk.X)
 
     def create_blank_board(self, size):
         self.working_sudoku = [[0 for x in range(size**2)] for x in range(size**2)]
@@ -39,7 +58,13 @@ class SudokuBoard(tk.Tk):
                 if int(col % size) == 0:
                     bg_color = next(self.color)
                 button = tk.Button(
-                    master=board, text="", bg=bg_color, height=2, width=4
+                    master=board,
+                    text="",
+                    font=button_font,
+                    bg=bg_color,
+                    fg=user_button_color,
+                    height=height,
+                    width=width,
                 )
                 button.bind("<ButtonPress-1>", self.create_entry_pad)
                 self.spaces[button] = (row, col)
@@ -62,9 +87,11 @@ class SudokuBoard(tk.Tk):
                     button = tk.Button(
                         master=board,
                         text="",
+                        font=button_font,
                         bg=bg_color,
-                        height=2,
-                        width=4,
+                        fg=user_button_color,
+                        height=height,
+                        width=width,
                     )
 
                     button.bind("<ButtonPress-1>", self.create_entry_pad)
@@ -75,9 +102,12 @@ class SudokuBoard(tk.Tk):
                     button = tk.Button(
                         master=board,
                         text=self.original_sudoku[row][col],
+                        font=button_font,
                         bg=bg_color,
-                        height=2,
-                        width=4,
+                        height=height,
+                        width=width,
+                        state="disabled",
+                        disabledforeground=system_button_color,
                     )
                     self.spaces[button] = (row, col)
                     button.grid(row=row, column=col)
@@ -86,18 +116,13 @@ class SudokuBoard(tk.Tk):
         self.pad_buttons = {}
         selected_space = event.widget
         x_pos, y_pos = self.spaces[selected_space]
-        print(x_pos, y_pos)
 
         def get_number(pad_event):
             number = pad_event.widget
             number = self.pad_buttons[number]
             self.update_board(selected_space, number)
             self.working_sudoku[x_pos][y_pos] = number
-            for row in self.working_sudoku:
-                print(row)
             window.destroy()
-
-        size = self.size_of_unit
 
         window = tk.Toplevel(self)
 
@@ -105,10 +130,10 @@ class SudokuBoard(tk.Tk):
         pad.pack()
         i = 1
 
-        for row in range(size):
+        for row in range(self.size_of_unit):
             self.rowconfigure(row, weight=1)
             self.columnconfigure(row, weight=1)
-            for col in range(size):
+            for col in range(self.size_of_unit):
                 button = tk.Button(
                     master=pad,
                     text=i,
@@ -123,6 +148,101 @@ class SudokuBoard(tk.Tk):
 
     def update_board(self, selected_space, number):
         selected_space.config(text=number)
+
+    def is_it_solved(self):
+        if self.check_for_solution():
+            window = tk.Toplevel(self)
+            label = tk.Label(
+                master=window, text="congratulations, you solved the sudoku!"
+            )
+            label.pack()
+        else:
+            window = tk.Toplevel(self)
+            label = tk.Label(master=window, text="the answer isn't correct")
+            label.pack()
+
+    def check_for_solution(self):
+        flat = [item for items in self.working_sudoku for item in items]
+        try:
+            flat.index(0)
+            return False
+        except ValueError:
+            pass
+
+        if not all(sum(row) == sum(set(row)) for row in self.working_sudoku):
+            return False
+        self.transposed_sudoku = list(zip(*self.working_sudoku))
+
+        if not all(sum(row) == sum(set(row)) for row in self.transposed_sudoku):
+            return False
+
+        numbers = [x + 1 for x in range(self.size_of_unit**2)]
+        for vertical_step in range(self.size_of_unit):
+            for horizontal_step in range(self.size_of_unit):
+                self.grid = []
+                for x in range(self.size_of_unit):
+                    for y in range(self.size_of_unit):
+                        self.grid.append(
+                            self.working_sudoku[
+                                (self.size_of_unit * vertical_step) + y
+                            ][(self.size_of_unit * horizontal_step) + x]
+                        )
+                self.grid.sort()
+                if self.grid != numbers:
+                    return False
+        return True
+
+    def check_valid_move(self, sudoku, x, y, number):
+        if sudoku[y][x] != 0:
+            return False
+        for value in range(self.size_of_unit**2):
+            if sudoku[y][value] == number:
+                return False
+        for value in range(self.size_of_unit**2):
+            if sudoku[value][x] == number:
+                return False
+        for x_value in range(
+            int(x / self.size_of_unit) * self.size_of_unit,
+            (int(x / self.size_of_unit) + 1) * self.size_of_unit,
+        ):
+            for y_value in range(
+                int(y / self.size_of_unit) * self.size_of_unit,
+                (int(y / self.size_of_unit) + 1) * self.size_of_unit,
+            ):
+                if sudoku[y_value][x_value] == number:
+                    return False
+        return True
+
+    def check_solution(self, sudoku):
+        flat = [item for items in sudoku for item in items]
+        try:
+            flat.index(0)
+            return False
+        except ValueError:
+            pass
+
+        if not all(sum(row) == sum(set(row)) for row in sudoku):
+            return False
+        transposed_sudoku = list(zip(*sudoku))
+
+        if not all(sum(row) == sum(set(row)) for row in transposed_sudoku):
+            return False
+
+        numbers = [x + 1 for x in range(self.size_of_unit**2)]
+        for vertical_step in range(self.size_of_unit):
+            for horizontal_step in range(self.size_of_unit):
+                grid = []
+                for x in range(self.size_of_unit):
+                    for y in range(self.size_of_unit):
+                        grid.append(
+                            sudoku[(self.size_of_unit * vertical_step) + y][
+                                (self.size_of_unit * horizontal_step) + x
+                            ]
+                        )
+                grid.sort()
+                if grid != numbers:
+                    return False
+        return True
 
 
 a = SudokuBoard()

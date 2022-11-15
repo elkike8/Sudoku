@@ -1,8 +1,9 @@
 import tkinter as tk
 from itertools import cycle
+import random
 from sudokus import *
 
-
+random.seed(13)
 MAX_TOTAL_CYCLES = 200
 colors = ("#CBEBF4", "#CBD7F5")
 height = 2
@@ -26,11 +27,9 @@ class SudokuBoard(tk.Tk):
         self.original_sudoku = normal_sudoku
         self.working_sudoku = self.original_sudoku.copy()
         self.size_of_unit = 2
-        self.empty_sudoku = [0 for x in range(self.size_of_unit)]
         self.spaces = {}
         self.counter = 0
         self.found_solutions = 0
-        self.solutions = []
         self.unique_solution = [
             [0 for x in range(self.size_of_unit**2)]
             for x in range(self.size_of_unit**2)
@@ -52,9 +51,15 @@ class SudokuBoard(tk.Tk):
         button_give_solution = tk.Button(
             master=hud,
             text="give solution",
-            command=self.solve_sudoku,
+            command=self.create_solution,
         )
         button_give_solution.pack()
+        button_create_sudoku = tk.Button(
+            master=hud,
+            text="create sudoku",
+            command=self.create_sudoku,
+        )
+        button_create_sudoku.pack()
         hud.pack(fill=tk.X)
 
     def create_blank_board(self, size):
@@ -166,15 +171,9 @@ class SudokuBoard(tk.Tk):
 
     def is_it_solved(self):
         if self.check_for_solution():
-            window = tk.Toplevel(self)
-            label = tk.Label(
-                master=window, text="congratulations, you solved the sudoku!"
-            )
-            label.pack()
+            self.display_message("congratulations, you solved the sudoku!")
         else:
-            window = tk.Toplevel(self)
-            label = tk.Label(master=window, text="the answer isn't correct")
-            label.pack()
+            self.display_message("the answer isn't correct")
 
     def check_for_solution(self):
         flat = [item for items in self.working_sudoku for item in items]
@@ -259,6 +258,44 @@ class SudokuBoard(tk.Tk):
                                     self.solve_sudoku()
                                     self.working_sudoku[y][x] = 0
                             return
+
+    def create_sudoku(self):
+        self.working_sudoku = [
+            [0 for x in range(self.size_of_unit**2)]
+            for x in range(self.size_of_unit**2)
+        ]
+        rand_number = random.randint(1, (self.size_of_unit**2) + 1)
+        rand_x_coordinate = random.randint(1, (self.size_of_unit**2) + 1)
+        rand_y_coordinate = random.randint(1, (self.size_of_unit**2) + 1)
+        self.working_sudoku[rand_x_coordinate][rand_y_coordinate] = rand_number
+        self.solve_sudoku()
+        self.working_sudoku = self.unique_solution
+
+    def display_message(self, message: str = ""):
+        window = tk.Toplevel(self)
+        label = tk.Label(master=window, text=message)
+        label.pack()
+
+    def create_solution(self):
+        self.solve_sudoku()
+        self.working_sudoku = self.unique_solution
+
+        if self.counter == 1:
+            self.display_message(f"the sudoku has one solution")
+
+        elif self.counter == MAX_TOTAL_CYCLES:
+            self.display_message(
+                f"the sudoku has at least {MAX_TOTAL_CYCLES} solutions"
+            )
+
+        elif self.counter > 1:
+            self.display_message(f"the sudoku has {self.found_solutions} solutions")
+
+        elif self.counter == 0:
+            self.display_message(f"the sudoku has no solution")
+
+        else:
+            self.display_message("check other options")
 
 
 if __name__ == "__main__":

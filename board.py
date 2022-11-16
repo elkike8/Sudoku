@@ -26,7 +26,7 @@ class SudokuBoard(tk.Tk):
         super().__init__()
         self.original_sudoku = two_answers_sudoku
         self.working_sudoku = self.original_sudoku.copy()
-        self.size_of_unit = 3
+        self.size_of_unit = 2
         self.spaces = {}
         self.counter = 0
         self.found_solutions = 0
@@ -35,13 +35,37 @@ class SudokuBoard(tk.Tk):
             for x in range(self.size_of_unit**2)
         ]
 
-        self.create_hud()
-        self.create_blank_board()
+        self.create_welcome()
+
+    def create_welcome(self):
+        welcome = tk.Frame(self)
+        welcome.pack()
+        message = tk.Label(
+            welcome, font=title_font, text="choose the size of the sudoku using the bar"
+        )
+        message.pack()
+
+        spinbox = tk.Spinbox(welcome, from_=2, to=7, font=title_font)
+        spinbox.pack()
+
+        def create_sudoku_board():
+            self.size_of_unit = int(spinbox.get())
+            self.create_hud()
+            self.create_blank_board()
+            welcome.destroy()
+
+        create_button = tk.Button(
+            master=welcome,
+            font=button_font,
+            text="create sudoku",
+            command=create_sudoku_board,
+        )
+        create_button.pack()
 
     def create_hud(self):
         hud = tk.Frame(self)
         message = tk.Label(hud, font=title_font, text=f"Let's play some Sudoku")
-        message.grid(row=0, columnspan=3)
+        message.grid(row=0, columnspan=self.size_of_unit, sticky="ew")
 
         button_check_solution = tk.Button(
             master=hud,
@@ -87,8 +111,15 @@ class SudokuBoard(tk.Tk):
 
         hud.pack(fill=tk.X)
 
+    def delete_current_board(self):
+        print(self.spaces)
+
     def reset_board(self):
         self.working_sudoku = [
+            [0 for x in range(self.size_of_unit**2)]
+            for x in range(self.size_of_unit**2)
+        ]
+        self.unique_solution = [
             [0 for x in range(self.size_of_unit**2)]
             for x in range(self.size_of_unit**2)
         ]
@@ -104,9 +135,13 @@ class SudokuBoard(tk.Tk):
             [0 for x in range(self.size_of_unit**2)]
             for x in range(self.size_of_unit**2)
         ]
-
+        self.unique_solution = [
+            [0 for x in range(self.size_of_unit**2)]
+            for x in range(self.size_of_unit**2)
+        ]
         board = tk.Frame(self)
         board.pack()
+
         self.color = cycle(colors)
 
         for row in range(self.size_of_unit**2):
@@ -292,7 +327,7 @@ class SudokuBoard(tk.Tk):
                     return False
         return True
 
-    def solve_sudoku(self, stop_at_second: bool = False):
+    def solve_sudoku(self):
 
         solved = self.check_for_solution()
 
@@ -304,8 +339,6 @@ class SudokuBoard(tk.Tk):
                     for k, v in self.spaces.items():
                         x, y = v
                         self.unique_solution[x][y] = self.working_sudoku[x][y]
-                if stop_at_second and self.found_solutions == 2:
-                    return True
                 return
             else:
                 self.counter += 1
@@ -317,11 +350,11 @@ class SudokuBoard(tk.Tk):
                                     self.working_sudoku, x, y, number
                                 ):
                                     self.working_sudoku[y][x] = number
-                                    self.solve_sudoku(stop_at_second)
+                                    self.solve_sudoku()
                                     self.working_sudoku[y][x] = 0
                             return
 
-    def print_solution(self, stop_at_second: bool = False):
+    def print_solution(self):
         if self.check_for_solution():
             self.solution_message()
         else:
@@ -331,7 +364,7 @@ class SudokuBoard(tk.Tk):
                 [0 for x in range(self.size_of_unit**2)]
                 for x in range(self.size_of_unit**2)
             ]
-            self.solve_sudoku(stop_at_second=stop_at_second)
+            self.solve_sudoku()
 
             for k, v in self.spaces.items():
                 x, y = v
@@ -368,7 +401,7 @@ class SudokuBoard(tk.Tk):
             else:
                 self.update_board(k, self.working_sudoku[x][y])
 
-        self.print_solution(stop_at_second=True)
+        self.print_solution()
 
         print(self.found_solutions, self.counter)
 

@@ -1,17 +1,18 @@
 import tkinter as tk
 from itertools import cycle
-import random
+from copy import deepcopy
+from random import randint, seed
 from sudokus import *
 
-random.seed(13)
-MAX_TOTAL_CYCLES = 2000
+seed(13)
+MAX_TOTAL_CYCLES = 9000
 colors = ("#CBEBF4", "#CBD7F5")
 height = 2
 width = 4
 title_font = ("Arial", 18, "bold")
 button_font = ("Arial", 10, "bold")
-user_button_color = "red"
-system_button_color = "black"
+first_button_color = "red"
+second_button_color = "black"
 
 
 def is_even(number: int):
@@ -25,7 +26,7 @@ class SudokuBoard(tk.Tk):
     def __init__(self):
         super().__init__()
         self.original_sudoku = two_answers_sudoku
-        self.working_sudoku = self.original_sudoku.copy()
+        self.working_sudoku = deepcopy(self.original_sudoku)
         self.size_of_unit = 2
         self.spaces = {}
         self.counter = 0
@@ -102,17 +103,7 @@ class SudokuBoard(tk.Tk):
         )
         button_create_sudoku.grid(row=2, column=1)
 
-        # button_unique_sudoku = tk.Button(
-        #     master=hud,
-        #     text="unique sudoku",
-        #     command=self.unique_sudoku,
-        # )
-        # button_unique_sudoku.grid(row=2, column=2)
-
         hud.pack(fill=tk.X)
-
-    def delete_current_board(self):
-        print(self.spaces)
 
     def reset_board(self):
         self.working_sudoku = [
@@ -158,7 +149,7 @@ class SudokuBoard(tk.Tk):
                     text="",
                     font=button_font,
                     bg=bg_color,
-                    fg=user_button_color,
+                    fg=first_button_color,
                     height=height,
                     width=width,
                 )
@@ -185,7 +176,7 @@ class SudokuBoard(tk.Tk):
                         text="",
                         font=button_font,
                         bg=bg_color,
-                        fg=user_button_color,
+                        fg=first_button_color,
                         height=height,
                         width=width,
                     )
@@ -203,7 +194,7 @@ class SudokuBoard(tk.Tk):
                         height=height,
                         width=width,
                         state="disabled",
-                        disabledforeground=system_button_color,
+                        disabledforeground=second_button_color,
                     )
                     button.bind("<ButtonPress-1>", self.create_entry_pad)
                     self.spaces[button] = (row, col)
@@ -265,7 +256,7 @@ class SudokuBoard(tk.Tk):
         selected_space,
         number,
         state: str = "normal",
-        color: str = user_button_color,
+        color: str = first_button_color,
     ):
         selected_space.config(text=number, state=state, fg=color)
 
@@ -275,13 +266,14 @@ class SudokuBoard(tk.Tk):
         else:
             self.display_message("the answer isn't correct")
 
-    def check_for_solution(self):
-        flat = [item for items in self.working_sudoku for item in items]
-        try:
-            flat.index(0)
-            return False
-        except ValueError:
-            pass
+    def check_for_solution(self, with_zeros: bool = True):
+        if with_zeros:
+            flat = [item for items in self.working_sudoku for item in items]
+            try:
+                flat.index(0)
+                return False
+            except ValueError:
+                pass
 
         if not all(sum(row) == sum(set(row)) for row in self.working_sudoku):
             return False
@@ -290,7 +282,6 @@ class SudokuBoard(tk.Tk):
         if not all(sum(row) == sum(set(row)) for row in self.transposed_sudoku):
             return False
 
-        numbers = [x + 1 for x in range(self.size_of_unit**2)]
         for vertical_step in range(self.size_of_unit):
             for horizontal_step in range(self.size_of_unit):
                 self.grid = []
@@ -302,7 +293,7 @@ class SudokuBoard(tk.Tk):
                             ][(self.size_of_unit * horizontal_step) + x]
                         )
                 self.grid.sort()
-                if self.grid != numbers:
+                if sum(self.grid) != sum(set(self.grid)):
                     return False
         return True
 
@@ -327,19 +318,23 @@ class SudokuBoard(tk.Tk):
                     return False
         return True
 
-    def solve_sudoku(self):
+    def solve_sudoku(self, break_at_second: bool = False):
 
         solved = self.check_for_solution()
 
         while self.counter < MAX_TOTAL_CYCLES:
+            if break_at_second and self.found_solutions > 1:
+                return self.found_solutions
+                break
             if solved:
                 self.counter += 1
                 self.found_solutions += 1
                 if self.found_solutions == 1:
-                    for k, v in self.spaces.items():
-                        x, y = v
-                        self.unique_solution[x][y] = self.working_sudoku[x][y]
-                return
+                    self.unique_solution = deepcopy(self.working_sudoku)
+                    # for k, v in self.spaces.items():
+                    #     x, y = v
+                    #     self.unique_solution[x][y] = self.working_sudoku[x][y]
+                return self.found_solutions
             else:
                 self.counter += 1
                 for y in range(self.size_of_unit**2):
@@ -350,11 +345,14 @@ class SudokuBoard(tk.Tk):
                                     self.working_sudoku, x, y, number
                                 ):
                                     self.working_sudoku[y][x] = number
-                                    self.solve_sudoku()
+                                    self.solve_sudoku(break_at_second)
                                     self.working_sudoku[y][x] = 0
-                            return
+                            return self.found_solutions
 
     def print_solution(self):
+        if not self.check_for_solution(with_zeros=False):
+            self.display_message(f"the numbers entered don't abide the rules")
+            return
         if self.check_for_solution():
             self.solution_message()
         else:
@@ -364,7 +362,7 @@ class SudokuBoard(tk.Tk):
                 [0 for x in range(self.size_of_unit**2)]
                 for x in range(self.size_of_unit**2)
             ]
-            self.solve_sudoku()
+            self.solve_sudoku(break_at_second=True)
 
             for k, v in self.spaces.items():
                 x, y = v
@@ -375,10 +373,10 @@ class SudokuBoard(tk.Tk):
                         k,
                         self.unique_solution[x][y],
                         # state="disabled",
-                        color=system_button_color,
+                        color=second_button_color,
                     )
 
-            self.working_sudoku = self.unique_solution
+            self.working_sudoku = deepcopy(self.unique_solution)
 
     def create_sudoku(self):
         self.working_sudoku = [
@@ -388,11 +386,34 @@ class SudokuBoard(tk.Tk):
         self.counter = 0
         self.found_solutions = 0
 
-        random_number = random.randint(1, self.size_of_unit**2)
-        x_pos = random.randint(1, self.size_of_unit**2)
-        y_pos = random.randint(1, self.size_of_unit**2)
+        random_number = randint(1, self.size_of_unit**2)
+        x_pos = randint(0, (self.size_of_unit**2) - 1)
+        # y_pos = randint(0, (self.size_of_unit**2) - 1)
 
-        self.working_sudoku[x_pos][y_pos] = random_number
+        self.working_sudoku[0][x_pos] = random_number
+
+        # for k, v in self.spaces.items():
+        #     x, y = v
+        #     if self.working_sudoku[x][y] == 0:
+        #         self.update_board(k, "")
+        #     else:
+        #         self.update_board(k, self.working_sudoku[x][y])
+
+        self.solve_sudoku(break_at_second=True)
+        self.working_sudoku = deepcopy(self.unique_solution)
+        self.found_solutions = 1
+
+        while self.found_solutions == 1:
+            self.temporary_solution = deepcopy(self.working_sudoku)
+            self.found_solutions = 0
+            x_pos = randint(0, (self.size_of_unit**2) - 1)
+            y_pos = randint(0, (self.size_of_unit**2) - 1)
+
+            self.working_sudoku[x_pos][y_pos] = 0
+            self.solve_sudoku(break_at_second=True)
+
+        self.working_sudoku = deepcopy(self.temporary_solution)
+        del self.temporary_solution
 
         for k, v in self.spaces.items():
             x, y = v
@@ -401,23 +422,16 @@ class SudokuBoard(tk.Tk):
             else:
                 self.update_board(k, self.working_sudoku[x][y])
 
-        self.print_solution()
-
-        print(self.found_solutions, self.counter)
-
-        while self.found_solutions == 1:
-            random_number = random.randint(1, self.size_of_unit**2)
-            x_pos = random.randint(1, self.size_of_unit**2)
-            y_pos = random.randint(1, self.size_of_unit**2)
-
-        self.working_sudoku[x_pos][y_pos] = random_number
-
     def display_message(self, message: str = ""):
         window = tk.Toplevel(self)
         label = tk.Label(master=window, text=message, font=title_font)
         label.pack()
 
     def solution_message(self):
+        if not self.check_for_solution(with_zeros=False):
+            self.display_message(f"the numbers entered don't abide the rules")
+            return
+
         self.counter = 0
         self.found_solutions = 0
         self.solve_sudoku()

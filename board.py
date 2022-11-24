@@ -2,10 +2,9 @@ import tkinter as tk
 from itertools import cycle
 from copy import deepcopy
 from random import randint, seed
-from sudokus import *
 
 seed(13)
-MAX_TOTAL_CYCLES = 9000
+MAX_TOTAL_CYCLES = 100000
 colors = ("#CBEBF4", "#CBD7F5")
 height = 2
 width = 4
@@ -25,20 +24,18 @@ def is_even(number: int):
 class SudokuBoard(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.original_sudoku = two_answers_sudoku
-        self.working_sudoku = deepcopy(self.original_sudoku)
-        self.size_of_unit = 2
-        self.spaces = {}
-        self.counter = 0
-        self.found_solutions = 0
-        self.unique_solution = [
-            [0 for x in range(self.size_of_unit**2)]
-            for x in range(self.size_of_unit**2)
-        ]
+        self.create_welcome()
 
+    def destroy_everything(self):
+        """destroys active widgets and creates a new welcome window. works as a return to menu"""
+
+        for widget in self.winfo_children():
+            widget.destroy()
         self.create_welcome()
 
     def create_welcome(self):
+        """creates the welcome window that lets the user choose the size of the puzzle"""
+
         welcome = tk.Frame(self)
         welcome.pack()
         message = tk.Label(
@@ -50,7 +47,10 @@ class SudokuBoard(tk.Tk):
         spinbox.pack()
 
         def create_sudoku_board():
+            """takes the selected size by the user and creates a blank sudoku board with it"""
+
             self.size_of_unit = int(spinbox.get())
+            self.spaces = {}
             self.create_hud()
             self.create_blank_board()
             welcome.destroy()
@@ -64,6 +64,8 @@ class SudokuBoard(tk.Tk):
         create_button.pack()
 
     def create_hud(self):
+        """creates the heads up display for the game window. contains all the navigation buttons"""
+
         hud = tk.Frame(self)
         message = tk.Label(hud, font=title_font, text=f"Let's play some Sudoku")
         message.grid(row=0, columnspan=self.size_of_unit, sticky="ew")
@@ -73,55 +75,46 @@ class SudokuBoard(tk.Tk):
             text="check solution",
             command=self.is_it_solved,
         )
-        button_check_solution.grid(row=1, column=0)
+        button_check_solution.grid(row=1, column=0, sticky="ew")
 
         button_give_solution = tk.Button(
             master=hud,
             text="show no. solutions",
             command=self.solution_message,
         )
-        button_give_solution.grid(row=1, column=1)
+        button_give_solution.grid(row=1, column=1, sticky="ew")
 
         button_create_solution = tk.Button(
             master=hud,
             text="give solution",
             command=self.print_solution,
         )
-        button_create_solution.grid(row=1, column=2)
+        button_create_solution.grid(row=1, column=2, sticky="ew")
 
         button_reset = tk.Button(
             master=hud,
             text="reset",
             command=self.reset_board,
         )
-        button_reset.grid(row=2, column=0)
+        button_reset.grid(row=2, column=0, sticky="ew")
 
         button_create_sudoku = tk.Button(
             master=hud,
             text="create sudoku",
             command=self.create_sudoku,
         )
-        button_create_sudoku.grid(row=2, column=1)
+        button_create_sudoku.grid(row=2, column=1, sticky="ew")
+
+        button_return_to_menu = tk.Button(
+            master=hud, text="return to menu", command=self.destroy_everything
+        )
+        button_return_to_menu.grid(row=2, column=2, sticky="ew")
 
         hud.pack(fill=tk.X)
 
-    def reset_board(self):
-        self.working_sudoku = [
-            [0 for x in range(self.size_of_unit**2)]
-            for x in range(self.size_of_unit**2)
-        ]
-        self.unique_solution = [
-            [0 for x in range(self.size_of_unit**2)]
-            for x in range(self.size_of_unit**2)
-        ]
-        self.counter = 0
-        self.found_solutions = 0
-        for k, v in self.spaces.items():
-            x, y = v
-            self.update_board(k, "")
-            self.unique_solution[x][y] = self.working_sudoku[x][y]
-
     def create_blank_board(self):
+        """creates a blank game board from the specified dimension by the user"""
+
         self.working_sudoku = [
             [0 for x in range(self.size_of_unit**2)]
             for x in range(self.size_of_unit**2)
@@ -157,50 +150,13 @@ class SudokuBoard(tk.Tk):
                 self.spaces[button] = (row, col)
                 button.grid(row=row, column=col)
 
-    def create_premade_board(self, size: int = 3):
-        board = tk.Frame(self)
-        board.pack()
-        self.color = cycle(colors)
-
-        for row in range(size**2):
-            if is_even(self.size_of_unit) and int(row % size) == 0:
-                bg_color = next(self.color)
-            elif not is_even(self.size_of_unit) and int(row % size) != 0:
-                bg_color = next(self.color)
-            for col in range(size**2):
-                if int(col % size) == 0:
-                    bg_color = next(self.color)
-                if self.original_sudoku[row][col] == 0:
-                    button = tk.Button(
-                        master=board,
-                        text="",
-                        font=button_font,
-                        bg=bg_color,
-                        fg=first_button_color,
-                        height=height,
-                        width=width,
-                    )
-
-                    button.bind("<ButtonPress-1>", self.create_entry_pad)
-                    self.spaces[button] = (row, col)
-                    button.grid(row=row, column=col)
-
-                else:
-                    button = tk.Button(
-                        master=board,
-                        text=self.original_sudoku[row][col],
-                        font=button_font,
-                        bg=bg_color,
-                        height=height,
-                        width=width,
-                        state="disabled",
-                        disabledforeground=second_button_color,
-                    )
-                    button.bind("<ButtonPress-1>", self.create_entry_pad)
-                    self.spaces[button] = (row, col)
-                    button.grid(row=row, column=col)
-
     def create_entry_pad(self, event):
+        """creates a secondary top window to allow the user to enter or clear numbers from the board
+
+        Args:
+            event (button_click): automatically triggered by the user clicking on a space in the game board
+        """
+
         self.pad_buttons = {}
         selected_space = event.widget
         x_pos, y_pos = self.spaces[selected_space]
@@ -251,6 +207,24 @@ class SudokuBoard(tk.Tk):
             sticky="ew",
         )
 
+    def reset_board(self):
+        """allows the user to delete everything from the current game window"""
+
+        self.working_sudoku = [
+            [0 for x in range(self.size_of_unit**2)]
+            for x in range(self.size_of_unit**2)
+        ]
+        self.unique_solution = [
+            [0 for x in range(self.size_of_unit**2)]
+            for x in range(self.size_of_unit**2)
+        ]
+        self.counter = 0
+        self.found_solutions = 0
+        for k, v in self.spaces.items():
+            x, y = v
+            self.update_board(k, "")
+            self.unique_solution[x][y] = self.working_sudoku[x][y]
+
     def update_board(
         self,
         selected_space,
@@ -258,15 +232,37 @@ class SudokuBoard(tk.Tk):
         state: str = "normal",
         color: str = first_button_color,
     ):
+        """functional. used to update the numbers on the board from the stored information in ram
+
+        Args:
+            selected_space (!frame!button): the button to be updated
+            number (int or ""): the number or blank to be displayed on the button
+            state (str, optional): state of the button following tkinter rules. Defaults to "normal".
+            color (str, optional): color for the font. Defaults to first_button_color.
+        """
+
         selected_space.config(text=number, state=state, fg=color)
 
     def is_it_solved(self):
+        """generates a window that gives feedback to the user for their proposed solution to the board game"""
+
         if self.check_for_solution():
             self.display_message("congratulations, you solved the sudoku!")
         else:
             self.display_message("the answer isn't correct")
 
-    def check_for_solution(self, with_zeros: bool = True):
+    def check_for_solution(self, with_zeros: bool = True) -> bool:
+        """functional. analyzes the board and evaluates if the numbers in it currently follow the rules.
+        additionally it can be used to evaluate if the board has been completely filled.
+
+        Args:
+            with_zeros (bool, optional): if true, the function will evaluate if all the spaces in the
+            board have been filled. Defaults to True.
+
+        Returns:
+            bool: True for a proper solution to the board.
+        """
+
         if with_zeros:
             flat = [item for items in self.working_sudoku for item in items]
             try:
@@ -297,7 +293,20 @@ class SudokuBoard(tk.Tk):
                     return False
         return True
 
-    def check_valid_move(self, sudoku, x, y, number):
+    def check_valid_move(self, sudoku, x: int, y: int, number: int) -> bool:
+        """functional. evaluates if the move being done to solve the board is valid
+        according to the rules.
+
+        Args:
+            sudoku (list): nested list containing the information related to the board
+            x (int): locator of information in the list
+            y (int): locator of information in the list
+            number (int): the number to be evaluated in for the board
+
+        Returns:
+            bool: True if the move proposed follows the rules.
+        """
+
         if sudoku[y][x] != 0:
             return False
         for value in range(self.size_of_unit**2):
@@ -319,6 +328,12 @@ class SudokuBoard(tk.Tk):
         return True
 
     def solve_sudoku(self, break_at_second: bool = False):
+        """solves the current working sudoku
+
+        Args:
+            break_at_second (bool, optional): used to break recursion after two solutions
+            are found in order to save resources when more is not needed. Defaults to False.
+        """
 
         solved = self.check_for_solution()
 
@@ -350,11 +365,19 @@ class SudokuBoard(tk.Tk):
                             return self.found_solutions
 
     def print_solution(self):
+        """takes the state of the board and generates a solution if possible.
+        then it updates the board window to reflect the solution.
+        """
+
         if not self.check_for_solution(with_zeros=False):
-            self.display_message(f"the numbers entered don't abide the rules")
+            self.display_message(
+                f"the numbers entered don't abide the rules, so there is no way to solve this board"
+            )
             return
+
         if self.check_for_solution():
             self.solution_message()
+
         else:
             self.counter = 0
             self.found_solutions = 0
@@ -379,6 +402,8 @@ class SudokuBoard(tk.Tk):
             self.working_sudoku = deepcopy(self.unique_solution)
 
     def create_sudoku(self):
+        """creates a sudoku with an unique solution an updates the board accordingly."""
+
         self.working_sudoku = [
             [0 for x in range(self.size_of_unit**2)]
             for x in range(self.size_of_unit**2)
@@ -386,9 +411,9 @@ class SudokuBoard(tk.Tk):
         self.counter = 0
         self.found_solutions = 0
 
+        # used to try to initiate different boards
         random_number = randint(1, self.size_of_unit**2)
         x_pos = randint(0, (self.size_of_unit**2) - 1)
-        # y_pos = randint(0, (self.size_of_unit**2) - 1)
 
         self.working_sudoku[0][x_pos] = random_number
 
@@ -418,18 +443,30 @@ class SudokuBoard(tk.Tk):
         for k, v in self.spaces.items():
             x, y = v
             if self.working_sudoku[x][y] == 0:
-                self.update_board(k, "")
+                self.update_board(k, "", color=second_button_color)
             else:
-                self.update_board(k, self.working_sudoku[x][y])
+                self.update_board(
+                    k, self.working_sudoku[x][y], color=second_button_color
+                )
 
     def display_message(self, message: str = ""):
+        """functional. creates a new top window to convey a message to the user
+
+        Args:
+            message (str, optional): the massage to be displayed. Defaults to "".
+        """
+
         window = tk.Toplevel(self)
         label = tk.Label(master=window, text=message, font=title_font)
         label.pack()
 
     def solution_message(self):
+        """evaluates the state of the board and displays information to the user over the possible solutions."""
+
         if not self.check_for_solution(with_zeros=False):
-            self.display_message(f"the numbers entered don't abide the rules")
+            self.display_message(
+                f"the numbers entered don't abide the rules, so there is no way to solve this board"
+            )
             return
 
         self.counter = 0

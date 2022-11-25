@@ -79,7 +79,7 @@ class SudokuBoard(tk.Tk):
 
         button_give_solution = tk.Button(
             master=hud,
-            text="show no. solutions",
+            text="show # solutions",
             command=self.solution_message,
         )
         button_give_solution.grid(row=1, column=1, sticky="ew")

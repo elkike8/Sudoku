@@ -39,11 +39,13 @@ class SudokuBoard(tk.Tk):
         welcome = tk.Frame(self)
         welcome.pack()
         message = tk.Label(
-            welcome, font=title_font, text="choose the size of the sudoku using the bar"
+            welcome,
+            font=title_font,
+            text="choose the size of the sudoku using the arrows",
         )
         message.pack()
 
-        spinbox = tk.Spinbox(welcome, from_=2, to=7, font=title_font)
+        spinbox = tk.Spinbox(welcome, from_=2, to=4, font=title_font, justify="center")
         spinbox.pack()
 
         def create_sudoku_board():
@@ -67,7 +69,11 @@ class SudokuBoard(tk.Tk):
         """creates the heads up display for the game window. contains all the navigation buttons"""
 
         hud = tk.Frame(self)
-        message = tk.Label(hud, font=title_font, text=f"Let's play some Sudoku")
+        for i in range(3):
+            self.columnconfigure(i, weight=1)
+        message = tk.Label(
+            hud, font=title_font, text=f"Let's play some Sudoku", justify="center"
+        )
         message.grid(row=0, columnspan=self.size_of_unit, sticky="ew")
 
         button_check_solution = tk.Button(
@@ -75,39 +81,40 @@ class SudokuBoard(tk.Tk):
             text="check solution",
             command=self.is_it_solved,
         )
-        button_check_solution.grid(row=1, column=0, sticky="ew")
 
         button_give_solution = tk.Button(
             master=hud,
             text="show # solutions",
             command=self.solution_message,
         )
-        button_give_solution.grid(row=1, column=1, sticky="ew")
 
         button_create_solution = tk.Button(
             master=hud,
             text="give solution",
             command=self.print_solution,
         )
-        button_create_solution.grid(row=1, column=2, sticky="ew")
 
         button_reset = tk.Button(
             master=hud,
-            text="reset",
+            text="erase puzzle",
             command=self.reset_board,
         )
-        button_reset.grid(row=2, column=0, sticky="ew")
 
         button_create_sudoku = tk.Button(
             master=hud,
             text="create sudoku",
             command=self.create_sudoku,
         )
-        button_create_sudoku.grid(row=2, column=1, sticky="ew")
 
         button_return_to_menu = tk.Button(
             master=hud, text="return to menu", command=self.destroy_everything
         )
+
+        button_create_sudoku.grid(row=1, column=0, sticky="ew")
+        button_check_solution.grid(row=1, column=1, sticky="ew")
+        button_reset.grid(row=1, column=2, sticky="ew")
+        button_create_solution.grid(row=2, column=0, sticky="ew")
+        button_give_solution.grid(row=2, column=1, sticky="ew")
         button_return_to_menu.grid(row=2, column=2, sticky="ew")
 
         hud.pack(fill=tk.X)
@@ -232,7 +239,7 @@ class SudokuBoard(tk.Tk):
         state: str = "normal",
         color: str = first_button_color,
     ):
-        """functional. used to update the numbers on the board from the stored information in ram
+        """functional. used to update the numbers on the board from the stored information in lists
 
         Args:
             selected_space (!frame!button): the button to be updated
@@ -332,7 +339,7 @@ class SudokuBoard(tk.Tk):
 
         Args:
             break_at_second (bool, optional): used to break recursion after two solutions
-            are found in order to save resources when more is not needed. Defaults to False.
+            are found in order to save resources when more solutions are not needed. Defaults to False.
         """
 
         solved = self.check_for_solution()
@@ -340,15 +347,12 @@ class SudokuBoard(tk.Tk):
         while self.counter < MAX_TOTAL_CYCLES:
             if break_at_second and self.found_solutions > 1:
                 return self.found_solutions
-                break
+
             if solved:
                 self.counter += 1
                 self.found_solutions += 1
                 if self.found_solutions == 1:
                     self.unique_solution = deepcopy(self.working_sudoku)
-                    # for k, v in self.spaces.items():
-                    #     x, y = v
-                    #     self.unique_solution[x][y] = self.working_sudoku[x][y]
                 return self.found_solutions
             else:
                 self.counter += 1
@@ -402,7 +406,7 @@ class SudokuBoard(tk.Tk):
             self.working_sudoku = deepcopy(self.unique_solution)
 
     def create_sudoku(self):
-        """creates a sudoku with an unique solution an updates the board accordingly."""
+        """creates a sudoku with an unique solution and updates the board accordingly."""
 
         self.working_sudoku = [
             [0 for x in range(self.size_of_unit**2)]
@@ -411,18 +415,11 @@ class SudokuBoard(tk.Tk):
         self.counter = 0
         self.found_solutions = 0
 
-        # used to try to initiate different boards
+        # used to initiate different boards
         random_number = randint(1, self.size_of_unit**2)
         x_pos = randint(0, (self.size_of_unit**2) - 1)
 
         self.working_sudoku[0][x_pos] = random_number
-
-        # for k, v in self.spaces.items():
-        #     x, y = v
-        #     if self.working_sudoku[x][y] == 0:
-        #         self.update_board(k, "")
-        #     else:
-        #         self.update_board(k, self.working_sudoku[x][y])
 
         self.solve_sudoku(break_at_second=True)
         self.working_sudoku = deepcopy(self.unique_solution)
@@ -495,8 +492,10 @@ class SudokuBoard(tk.Tk):
             self.counter = 0
             self.found_solutions = 0
 
-        elif self.found_solutions == 0:
-            self.display_message(f"the sudoku has no solution")
+        elif self.counter == MAX_TOTAL_CYCLES and self.found_solutions == 0:
+            self.display_message(
+                f"the maximum number of iterations was reached. we couldn't find a solution"
+            )
             self.counter = 0
             self.found_solutions = 0
 
